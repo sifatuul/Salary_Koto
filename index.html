@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>স্যালারি কত!</title>
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #7c3aed;
+  --success: #10b981;
+  --danger: #ef4444;
+  --glass: rgba(255, 255, 255, 0.15);
+  --glass-table: rgba(255, 255, 255, 0.85);
+  --border: rgba(255, 255, 255, 0.3);
+  --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  min-height: 100vh;
+  font-family: 'Montserrat', sans-serif;
+  background: linear-gradient(135deg, #6d28d9, #7c3aed, #4338ca);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+header, footer {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 20px 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+footer { border-bottom: none; border-top: 1px solid rgba(255, 255, 255, 0.15); text-align: center; }
+
+.header-wrap { max-width: 1400px; margin: auto; display: flex; justify-content: space-between; align-items: center; }
+.logo { font-family: "Anek Bangla", sans-serif; font-size: 34px; font-weight: 700; }
+.logo span { color: #fbbf24; }
+
+.container { max-width: 1400px; margin: auto; width: 100%; padding: 35px; flex: 1; }
+
+/* Enhanced Glassmorphism for Cards and Panels */
+.stat-card, .panel {
+  background: var(--glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+/* Moved Stats Below */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 25px; }
+.stat-card { padding: 25px; }
+.stat-title { opacity: 0.9; margin-bottom: 8px; font-weight: 500; }
+.stat-value { font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+.panel { overflow: hidden; }
+.form-section { padding: 25px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+.form-grid { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 15px; }
+
+input { 
+  padding: 14px 18px; 
+  border: 1px solid rgba(255, 255, 255, 0.4); 
+  border-radius: 12px; 
+  background: rgba(255, 255, 255, 0.9);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.3s ease;
+}
+input:focus { background: #fff; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.3); }
+
+.btn { padding: 14px 24px; border: none; border-radius: 12px; color: #fff; cursor: pointer; font-weight: 600; font-family: 'Montserrat', sans-serif; transition: all 0.3s ease; }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.btn-primary { background: var(--success); }
+.btn-export { background: #f59e0b; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.table-wrap { padding: 25px; }
+h2 { margin-bottom: 20px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+/* Improved Glass Table */
+table { 
+  width: 100%; 
+  background: var(--glass-table); 
+  color: #1f2937; 
+  border-collapse: collapse; 
+  border-radius: 16px; 
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+th, td { padding: 16px 20px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); text-align: left; }
+thead { background: rgba(243, 244, 246, 0.95); font-weight: 600; color: #111827; }
+tbody tr:hover { background: rgba(255, 255, 255, 0.95); }
+
+.delete-btn { background: var(--danger); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: background 0.2s; }
+.delete-btn:hover { background: #dc2626; }
+
+@media(max-width: 900px) {
+  .stats, .form-grid { grid-template-columns: 1fr; }
+  .header-wrap { flex-direction: column; gap: 15px; text-align: center; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-wrap">
+    <div>
+      <div class="logo">💰 স্যালারি <span>কত!</span></div>
+      <div style="opacity: 0.9; margin-top: 4px;">Smart Salary & Timesheet Tracker</div>
+    </div>
+    <button class="btn btn-export" onclick="exportCSV()">Export CSV</button>
+  </div>
+</header>
+
+<main class="container">
+  <!-- Panel (Form + Table) is now on top -->
+  <div class="panel">
+    <div class="form-section">
+      <div class="form-grid">
+        <input id="month" placeholder="Month (Jun 2026)">
+        <input id="time" placeholder="HH:MM">
+        <input id="rate" type="number" value="300">
+        <button class="btn btn-primary" id="saveBtn" onclick="addEntry()">Save Entry</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <h2>Salary History</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Time</th>
+            <th>Decimal Hrs</th>
+            <th>Rate</th>
+            <th>Salary</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="6" style="text-align:center; padding:30px; font-weight:500;">Loading data from Google Sheets...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stats (Totals) are now on the bottom -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-title">Total Earnings</div>
+      <div class="stat-value" id="totalSalary">৳0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Total Time</div>
+      <div class="stat-value" id="totalTime">0:00</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Hourly Rate</div>
+      <div class="stat-value">৳300</div>
+    </div>
+  </div>
+</main>
+
+<footer>© 2026 <span style="font-family:'Anek Bangla', sans-serif; font-weight: 500;">স্যালারি কত!</span> • Personal Salary Management Dashboard</footer>
+
+<script>
+// IMPORTANT: Replace this URL with your actual Web App URL from Google Apps Script
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTP2_enbNNGVkR9sh-vm6Q6gacceMmHmlRxMAQtFjI8Uuqv3-TP3pElImpAxnCI9XWOA/exec"; 
+
+let currentData = [];
+
+function timeToDecimal(t) {
+    if (!t || !t.includes(':')) return 0;
+    let [a, b] = t.split(':').map(Number);
+    return a + (b / 60);
+}
+
+function money(v) {
+    return '৳' + Math.round(v).toLocaleString();
+}
+
+async function loadData() {
+    try {
+        const response = await fetch(SCRIPT_URL);
+        const data = await response.json();
+        currentData = data;
+        renderTable(currentData);
+    } catch (e) {
+        document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ef4444; font-weight:600;">Error loading data. Make sure SCRIPT_URL is correct.</td></tr>`;
+        console.error("Error:", e);
+    }
+}
+
+function renderTable(data) {
+    let tb = document.getElementById('tableBody');
+    tb.innerHTML = '';
+    let totalH = 0, totalS = 0;
+    
+    if(data.length === 0) {
+        tb.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">No entries found.</td></tr>`;
+    }
+
+    data.forEach(r => {
+        const hrs = timeToDecimal(r.time);
+        const sal = hrs * r.rate;
+        totalH += hrs; 
+        totalS += sal;
+        tb.innerHTML += `<tr>
+            <td style="font-weight:500;">${r.month}</td>
+            <td>${r.time}</td>
+            <td>${hrs.toFixed(2)}</td>
+            <td>${r.rate}</td>
+            <td style="font-weight:600; color:#10b981;">${money(sal)}</td>
+            <td><button class="delete-btn" onclick="deleteEntry('${r.id}')">Delete</button></td>
+        </tr>`;
+    });
+    
+    document.getElementById('totalSalary').innerText = money(totalS);
+    let h = Math.floor(totalH);
+    let m = Math.round((totalH - h) * 60);
+    document.getElementById('totalTime').innerText = `${h}:${String(m).padStart(2, '0')}`;
+}
+
+async function addEntry() {
+    const month = document.getElementById('month').value;
+    const time = document.getElementById('time').value;
+    const rate = document.getElementById('rate').value;
+
+    if (!month || !time || !rate) {
+        alert("Please fill all fields.");
+        return;
+    }
+
+    const pass = prompt('Enter Admin Password to add entry:');
+    if (!pass) return;
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.innerText = "Saving...";
+
+    const payload = {
+        action: 'add',
+        password: pass,
+        month: month,
+        time: time,
+        rate: Number(rate)
+    };
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('month').value = '';
+            document.getElementById('time').value = '';
+            await loadData();
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (e) {
+        alert('Network error while saving.');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Save Entry";
+    }
+}
+
+async function deleteEntry(id) {
+    const pass = prompt('Enter Admin Password to delete this entry:');
+    if (!pass) return;
+
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">Deleting entry...</td></tr>`;
+
+    const payload = {
+        action: 'delete',
+        password: pass,
+        id: id
+    };
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            await loadData();
+        } else {
+            alert('Error: ' + result.error);
+            renderTable(currentData); 
+        }
+    } catch (e) {
+        alert('Network error while deleting.');
+        renderTable(currentData);
+    }
+}
+
+function exportCSV() {
+    if (currentData.length === 0) {
+        alert("No data to export!");
+        return;
+    }
+    let csv = 'Month,Time,Rate\n';
+    currentData.forEach(r => csv += `${r.month},${r.time},${r.rate}\n`);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'salary_history.csv';
+    a.click();
+}
+
+window.onload = loadData;
+</script>
+</body>
+</html>
