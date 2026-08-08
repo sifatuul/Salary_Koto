@@ -154,4 +154,4 @@ Upload your `index.html` file to any free static hosting provider:
 
 ---
 
-*Developed by Stikul Islam*
+*Developed by Sifatul Islam*
