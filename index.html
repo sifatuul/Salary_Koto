@@ -52,11 +52,11 @@ footer { border-bottom: none; border-top: 1px solid rgba(255, 255, 255, 0.15); t
   box-shadow: var(--shadow);
 }
 
-/* Moved Stats Below */
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 25px; }
+/* 4-Card KPI Stats Below */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 25px; }
 .stat-card { padding: 25px; }
-.stat-title { opacity: 0.9; margin-bottom: 8px; font-weight: 500; }
-.stat-value { font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.stat-title { opacity: 0.9; margin-bottom: 8px; font-weight: 500; font-size: 14px; }
+.stat-value { font-size: 28px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
 .panel { overflow: hidden; }
 .form-section { padding: 25px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
@@ -80,7 +80,7 @@ input:focus { background: #fff; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.3); }
 .btn-export { background: #f59e0b; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
-.table-wrap { padding: 25px; }
+.table-wrap { padding: 25px; overflow-x: auto; }
 h2 { margin-bottom: 20px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
 /* Improved Glass Table */
@@ -100,6 +100,10 @@ tbody tr:hover { background: rgba(255, 255, 255, 0.95); }
 .delete-btn { background: var(--danger); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: background 0.2s; }
 .delete-btn:hover { background: #dc2626; }
 
+@media(max-width: 1100px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media(max-width: 900px) {
   .stats, .form-grid { grid-template-columns: 1fr; }
   .header-wrap { flex-direction: column; gap: 15px; text-align: center; }
@@ -118,11 +122,11 @@ tbody tr:hover { background: rgba(255, 255, 255, 0.95); }
 </header>
 
 <main class="container">
-  <!-- Panel (Form + Table) is now on top -->
+  <!-- Panel (Form + Table) on top -->
   <div class="panel">
     <div class="form-section">
       <div class="form-grid">
-        <input id="month" placeholder="Month (Jun 2026)">
+        <input id="month" placeholder="Month (November 2026)">
         <input id="time" placeholder="HH:MM">
         <input id="rate" type="number" value="300">
         <button class="btn btn-primary" id="saveBtn" onclick="addEntry()">Save Entry</button>
@@ -149,19 +153,23 @@ tbody tr:hover { background: rgba(255, 255, 255, 0.95); }
     </div>
   </div>
 
-  <!-- Stats (Totals) are now on the bottom -->
+  <!-- 4 KPI Stats matching your Google Sheet -->
   <div class="stats">
     <div class="stat-card">
       <div class="stat-title">Total Earnings</div>
       <div class="stat-value" id="totalSalary">৳0</div>
     </div>
     <div class="stat-card">
-      <div class="stat-title">Total Time</div>
+      <div class="stat-title">Total Hours</div>
       <div class="stat-value" id="totalTime">0:00</div>
     </div>
     <div class="stat-card">
-      <div class="stat-title">Hourly Rate</div>
-      <div class="stat-value">৳300</div>
+      <div class="stat-title">Average Monthly Salary</div>
+      <div class="stat-value" id="avgSalary">৳0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Peak Monthly Salary</div>
+      <div class="stat-value" id="peakSalary">৳0</div>
     </div>
   </div>
 </main>
@@ -169,154 +177,173 @@ tbody tr:hover { background: rgba(255, 255, 255, 0.95); }
 <footer>© 2026 <span style="font-family:'Anek Bangla', sans-serif; font-weight: 500;">স্যালারি কত!</span> • Personal Salary Management Dashboard</footer>
 
 <script>
-// IMPORTANT: Replace this URL with your actual Web App URL from Google Apps Script
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTP2_enbNNGVkR9sh-vm6Q6gacceMmHmlRxMAQtFjI8Uuqv3-TP3pElImpAxnCI9XWOA/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx-coxkUgK-5yVXt8ovfAsdaYdYGN6dijwLglfBge7W9aJWgw0H0zSx2lMxv0kFZPY2kw/exec";
 
 let currentData = [];
 
+function parseNum(v) {
+  if (typeof v === 'number') return v;
+  return parseFloat(String(v || '0').replace(/[^0-9.-]/g, '')) || 0;
+}
+
 function timeToDecimal(t) {
-    if (!t || !t.includes(':')) return 0;
-    let [a, b] = t.split(':').map(Number);
-    return a + (b / 60);
+  if (!t || !String(t).includes(':')) return 0;
+  const parts = String(t).trim().split(':').map(Number);
+  const h = parts[0] || 0;
+  const m = parts[1] || 0;
+  return h + (m / 60);
 }
 
 function money(v) {
-    return '৳' + Math.round(v).toLocaleString();
+  return '৳' + Math.round(v).toLocaleString();
 }
 
 async function loadData() {
-    try {
-        const response = await fetch(SCRIPT_URL);
-        const data = await response.json();
-        currentData = data;
-        renderTable(currentData);
-    } catch (e) {
-        document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ef4444; font-weight:600;">Error loading data. Make sure SCRIPT_URL is correct.</td></tr>`;
-        console.error("Error:", e);
-    }
+  try {
+    const response = await fetch(SCRIPT_URL);
+    const data = await response.json();
+    currentData = Array.isArray(data) ? data : [];
+    renderTable(currentData);
+  } catch (e) {
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ef4444; font-weight:600;">Error loading data. Make sure SCRIPT_URL is correct and re-deployed.</td></tr>`;
+    console.error("Error:", e);
+  }
 }
 
 function renderTable(data) {
-    let tb = document.getElementById('tableBody');
-    tb.innerHTML = '';
-    let totalH = 0, totalS = 0;
-    
-    if(data.length === 0) {
-        tb.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">No entries found.</td></tr>`;
-    }
+  const tb = document.getElementById('tableBody');
+  tb.innerHTML = '';
+  let totalH = 0, totalS = 0, peakS = 0;
 
-    data.forEach(r => {
-        const hrs = timeToDecimal(r.time);
-        const sal = hrs * r.rate;
-        totalH += hrs; 
-        totalS += sal;
-        tb.innerHTML += `<tr>
-            <td style="font-weight:500;">${r.month}</td>
-            <td>${r.time}</td>
-            <td>${hrs.toFixed(2)}</td>
-            <td>${r.rate}</td>
-            <td style="font-weight:600; color:#10b981;">${money(sal)}</td>
-            <td><button class="delete-btn" onclick="deleteEntry('${r.id}')">Delete</button></td>
-        </tr>`;
-    });
-    
-    document.getElementById('totalSalary').innerText = money(totalS);
-    let h = Math.floor(totalH);
-    let m = Math.round((totalH - h) * 60);
-    document.getElementById('totalTime').innerText = `${h}:${String(m).padStart(2, '0')}`;
+  if (data.length === 0) {
+    tb.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">No entries found.</td></tr>`;
+  }
+
+  data.forEach(r => {
+    const hrs = timeToDecimal(r.time);
+    const rateNum = parseNum(r.rate);
+    const sal = r.salary ? parseNum(r.salary) : (hrs * rateNum);
+
+    totalH += hrs;
+    totalS += sal;
+    if (sal > peakS) peakS = sal;
+
+    tb.innerHTML += `<tr>
+      <td style="font-weight:500;">${r.month}</td>
+      <td>${r.time}</td>
+      <td>${hrs.toFixed(2)}</td>
+      <td>৳${rateNum}</td>
+      <td style="font-weight:600; color:#10b981;">${money(sal)}</td>
+      <td><button class="delete-btn" onclick="deleteEntry('${r.id}')">Delete</button></td>
+    </tr>`;
+  });
+
+  const avgS = data.length > 0 ? (totalS / data.length) : 0;
+
+  document.getElementById('totalSalary').innerText = money(totalS);
+  const h = Math.floor(totalH);
+  const m = Math.round((totalH - h) * 60);
+  document.getElementById('totalTime').innerText = `${h}:${String(m).padStart(2, '0')}`;
+  document.getElementById('avgSalary').innerText = money(avgS);
+  document.getElementById('peakSalary').innerText = money(peakS);
 }
 
 async function addEntry() {
-    const month = document.getElementById('month').value;
-    const time = document.getElementById('time').value;
-    const rate = document.getElementById('rate').value;
+  const month = document.getElementById('month').value.trim();
+  const time = document.getElementById('time').value.trim();
+  const rate = document.getElementById('rate').value.trim();
 
-    if (!month || !time || !rate) {
-        alert("Please fill all fields.");
-        return;
+  if (!month || !time || !rate) {
+    alert("Please fill all fields.");
+    return;
+  }
+
+  const pass = prompt('Enter Admin Password to add entry:');
+  if (!pass) return;
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.innerText = "Saving...";
+
+  const payload = {
+    action: 'add',
+    password: pass,
+    month: month,
+    time: time,
+    rate: Number(rate)
+  };
+
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json();
+
+    if (result.success) {
+      document.getElementById('month').value = '';
+      document.getElementById('time').value = '';
+      await loadData();
+    } else {
+      alert('Error: ' + result.error);
     }
-
-    const pass = prompt('Enter Admin Password to add entry:');
-    if (!pass) return;
-
-    const btn = document.getElementById('saveBtn');
-    btn.disabled = true;
-    btn.innerText = "Saving...";
-
-    const payload = {
-        action: 'add',
-        password: pass,
-        month: month,
-        time: time,
-        rate: Number(rate)
-    };
-
-    try {
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            document.getElementById('month').value = '';
-            document.getElementById('time').value = '';
-            await loadData();
-        } else {
-            alert('Error: ' + result.error);
-        }
-    } catch (e) {
-        alert('Network error while saving.');
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Save Entry";
-    }
+  } catch (e) {
+    alert('Network error while saving.');
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "Save Entry";
+  }
 }
 
 async function deleteEntry(id) {
-    const pass = prompt('Enter Admin Password to delete this entry:');
-    if (!pass) return;
+  const pass = prompt('Enter Admin Password to delete this entry:');
+  if (!pass) return;
 
-    document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">Deleting entry...</td></tr>`;
+  document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">Deleting entry...</td></tr>`;
 
-    const payload = {
-        action: 'delete',
-        password: pass,
-        id: id
-    };
+  const payload = {
+    action: 'delete',
+    password: pass,
+    id: id
+  };
 
-    try {
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            await loadData();
-        } else {
-            alert('Error: ' + result.error);
-            renderTable(currentData); 
-        }
-    } catch (e) {
-        alert('Network error while deleting.');
-        renderTable(currentData);
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json();
+
+    if (result.success) {
+      await loadData();
+    } else {
+      alert('Error: ' + result.error);
+      renderTable(currentData);
     }
+  } catch (e) {
+    alert('Network error while deleting.');
+    renderTable(currentData);
+  }
 }
 
 function exportCSV() {
-    if (currentData.length === 0) {
-        alert("No data to export!");
-        return;
-    }
-    let csv = 'Month,Time,Rate\n';
-    currentData.forEach(r => csv += `${r.month},${r.time},${r.rate}\n`);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = 'salary_history.csv';
-    a.click();
+  if (currentData.length === 0) {
+    alert("No data to export!");
+    return;
+  }
+  let csv = 'Month,Time,Decimal Hrs,Rate,Salary\n';
+  currentData.forEach(r => {
+    const hrs = timeToDecimal(r.time);
+    const rateNum = parseNum(r.rate);
+    const sal = r.salary ? parseNum(r.salary) : (hrs * rateNum);
+    csv += `"${r.month}","${r.time}",${hrs.toFixed(2)},${rateNum},${Math.round(sal)}\n`;
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'salary_history.csv';
+  a.click();
 }
 
 window.onload = loadData;
